@@ -402,18 +402,6 @@ Pour tenir compte des différences de niveau entre groupes, les fonctionnalités
 - Rapport de couverture de tests (≥ 50 % recommandé)
 - (Bonus) Fichier de configuration CI (GitHub Actions ou GitLab CI)
 
----
-
-## 12. Ressources & support
-
-Des ressources complémentaires seront fournies pour :
-
-- Exemple de configuration Express basique
-- Exemple minimal d’authentification JWT
-- Exemple de validation avec Zod/Joi/Yup
-- Exemple d’openapi.yaml simplifié
-- Liens vers la documentation officielle des outils utilisés
-
 L’objectif n’est pas que tout soit parfait, mais que vous :
 
 - fassiez des **choix argumentés**,
