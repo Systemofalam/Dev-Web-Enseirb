@@ -3,7 +3,10 @@
 
 ---
 
-## 1. Présentation générale
+## 1. Présentation généraleRemove-Item -LiteralPath .\backend\database\.claude -Recurse -Force
+Remove-Item -LiteralPath .\backend\database\.agents -Recurse -Force
+Remove-Item -LiteralPath .\backend\database\.windsurf -Recurse -Force
+Remove-Item -LiteralPath .\backend\database\skills-lock.json -Force
 
 **SeenFlix** est une application web permettant à des utilisateurs inscrits de :
 
