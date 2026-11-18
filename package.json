@@ -1,0 +1,16 @@
+{
+  "name": "seenflix",
+  "private": true,
+  "workspaces": ["front", "back"],
+  "scripts": {
+    "setup": "npm install && npm run db:migrate -w back && npm run db:generate -w back && npm run db:seed -w back",
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev -w back\" \"npm run dev -w front\"",
+    "lint": "oxlint",
+    "test": "npm test -w back"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "oxlint": "^1.90.0"
+  }
+}
+
