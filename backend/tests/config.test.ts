@@ -14,6 +14,15 @@ describe("loadConfig", () => {
     expect(config.PORT).toBe(4000);
     expect(config.NODE_ENV).toBe("development");
     expect(config.JWT_ACCESS_TTL).toBe("15m");
+    expect(config.CORS_ORIGIN).toEqual(["http://localhost:5173"]);
+  });
+
+  test("parses CORS_ORIGIN as a comma-separated list", () => {
+    const config = loadConfig({
+      ...validEnv,
+      CORS_ORIGIN: "http://localhost:5173, https://seenflix.example ,",
+    });
+    expect(config.CORS_ORIGIN).toEqual(["http://localhost:5173", "https://seenflix.example"]);
   });
 
   test("throws listing missing variables", () => {
