@@ -1,10 +1,38 @@
 import { Router } from 'express'
 import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken'
 import { prisma } from './db.js'
+
+const ACCESS_TTL = '15m'
+const REFRESH_TTL = '7d'
+
+// "sub" doit être une chaîne dans un JWT, alors que l'id Prisma est un Int
+const signAccess = (user) =>
+    jwt.sign({ sub: String(user.id) }, process.env.JWT_SECRET, { expiresIn: ACCESS_TTL })
+
+const signRefresh = (user) =>
+    jwt.sign({ sub: String(user.id) }, process.env.JWT_REFRESH_SECRET, { expiresIn: REFRESH_TTL })
 
 const router = Router()
 
-// Commande test: curl -X POST http://localhost:3000/api/auth/register -H "Content-Type: application/json" -d "{\"email\":\"bob@example.org\",\"password\":\"motdepasse123\"}"
+// Middleware : lit "Authorization: Bearer <token>", vérifie l'access token
+// et met l'id de l'utilisateur dans req.userId
+export function requireAuth(req, res, next) {
+    const header = req.headers.authorization ?? ''
+    const token = header.startsWith('Bearer ') ? header.slice(7) : null
+    if (!token) {
+        return res.status(401).json({ error: 'Token manquant' })
+    }
+
+    try {
+        const payload = jwt.verify(token, process.env.JWT_SECRET)
+        req.userId = Number(payload.sub)
+        next()
+    } catch {
+        return res.status(401).json({ error: 'Token invalide ou expiré' })
+    }
+}
+
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
     try {
@@ -27,25 +55,86 @@ router.post('/register', async (req, res) => {
             return res.status(409).json({ error: 'Cet email est déjà utilisé' })
         }
         console.error(err)
-    return res.status(500).json({ error: 'Erreur serveur' })
+        return res.status(500).json({ error: 'Erreur serveur' })
     }
 })
 
-// TODO POST /api/auth/login
-// Vérifier email + mot de passe (bcrypt.compare), même message d'erreur si l'email
-// est inconnu ou si le mot de passe est faux (401), puis renvoyer
-// { accessToken, refreshToken } dans le body (jsonwebtoken).
+// POST /api/auth/login
+router.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body ?? {}
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email et mot de passe requis' })
+        }
 
-// TODO POST /api/auth/refresh
-// Lire refreshToken dans le body, le vérifier, puis renvoyer de nouveaux tokens
-// (rotation du refresh token).
+        const user = await prisma.user.findUnique({
+            where: { email: email.trim().toLowerCase() },
+        })
 
-// TODO GET /api/auth/me
-// Route protégée : écrire d'abord le middleware requireAuth (lit le header
-// "Authorization: Bearer <token>", vérifie le token, met l'id dans req.userId),
-// puis renvoyer id et email de l'utilisateur connecté.
+        // Même message si l'email est inconnu ou si le mot de passe est faux
+        const ok = user && (await bcrypt.compare(password, user.passwordHash))
+        if (!ok) {
+            return res.status(401).json({ error: 'Identifiants incorrects' })
+        }
 
-// TODO POST /api/auth/logout
-// Peut rester minimal (204) : c'est le front qui supprime ses tokens.
+        return res.json({
+            accessToken: signAccess(user),
+            refreshToken: signRefresh(user),
+            user: { id: user.id, email: user.email },
+        })
+    } catch (err) {
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// POST /api/auth/refresh
+// Body : { refreshToken }. Renvoie une nouvelle paire de tokens (rotation). ATTENTION L'ANCIENNE PAIR EST TOUJOURS VALIDE
+router.post('/refresh', async (req, res) => {
+    const { refreshToken } = req.body ?? {}
+    if (!refreshToken) {
+        return res.status(400).json({ error: 'refreshToken requis' })
+    }
+
+    try {
+        const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET)
+        const user = await prisma.user.findUnique({
+            where: { id: Number(payload.sub) },
+        })
+        if (!user) {
+            return res.status(401).json({ error: 'Utilisateur introuvable' })
+        }
+
+        return res.json({
+            accessToken: signAccess(user),
+            refreshToken: signRefresh(user),
+        })
+    } catch {
+        return res.status(401).json({ error: 'Refresh token invalide ou expiré' })
+    }
+})
+
+// GET /api/auth/me (protégée)
+router.get('/me', requireAuth, async (req, res) => {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: req.userId },
+            select: { id: true, email: true, createdAt: true },
+        })
+        if (!user) {
+            return res.status(404).json({ error: 'Utilisateur introuvable' })
+        }
+        return res.json(user)
+    } catch (err) {
+        console.error(err)
+        return res.status(500).json({ error: 'Erreur serveur' })
+    }
+})
+
+// POST /api/auth/logout
+// Minimal : c'est le front qui supprime ses tokens.
+router.post('/logout', (req, res) => {
+    return res.status(204).end()
+})
 
 export default router
