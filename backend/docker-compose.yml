@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: seenflix_postgres
+    environment:
+      POSTGRES_USER: seenflix
+      POSTGRES_PASSWORD: seenflix
+      POSTGRES_DB: seenflix
+    ports:
+      - "5432:5432"
+    volumes:
+      - seenflix_postgres:/var/lib/postgresql/data
+
+volumes:
+  seenflix_postgres:
