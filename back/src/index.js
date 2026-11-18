@@ -8,8 +8,9 @@ app.use(express.json())
 app.get('/api/health', (req, res) => res.json({ ok: true }))
 
 
-app.get('/search/:keyword', async (req, res) => {
-    let reqRes = await searchContent(req.params.keyword);
+app.get('/movies/search', async (req, res) => {
+    let reqRes = await searchContent(req.query.q);
+    res.status(200);
     res.send(reqRes);
 })
 
