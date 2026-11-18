@@ -1,9 +1,14 @@
-import express, { type Express, type Request, type Response } from 'express';
+import express, { type Express } from "express";
+import { router } from "./routes/index.ts";
 
-const app: Express = express();
+// App is built without listening so tests can mount it on a random port.
+export function createApp(): Express {
+  const app = express();
 
-app.get('/', (req: Request, res: Response) => {
-  res.send('Hello World!');
-});
+  app.disable("x-powered-by");
+  app.use(express.json());
 
-app.listen(3000);
+  app.use(router);
+
+  return app;
+}
