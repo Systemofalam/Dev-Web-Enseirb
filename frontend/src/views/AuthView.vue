@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+// ref function is used for creating reactive references to form input values
 const email = ref('')
 const password = ref('')
 const passwordConfirm = ref('')
+// Props allows to determine whether the view is in login or register mode
 const props = defineProps<{
   mode: 'login' | 'register'
 }>()
 
+// computed function is used for creating reactive derived values based on other reactive references
 const isRegister = computed(() => props.mode === 'register')
 const title = computed(() => (isRegister.value ? 'Créer un compte' : 'Se connecter'))
 const submitLabel = computed(() => (isRegister.value ? "S'inscrire" : 'Connexion'))
@@ -30,7 +33,29 @@ const info = computed(() =>
 )
 
 // TODO (8.3 / 9.2 / 9.3) : appeler le store d'authentification
-function handleSubmit() {}
+function handleSubmit() {
+  // 1. Check and alert if password !== password confirm
+  if (isRegister.value && password.value !== passwordConfirm.value && props.mode === 'register') {
+    alert('Les mots de passe ne correspondent pas.')
+    return
+  }
+
+  // 2. Check and alert if email is empty
+  if (!email.value) {
+    alert('Veuillez entrer une adresse email.')
+    return
+  }
+
+  // 3. Check and alert if password is empty
+  if (!password.value) {
+    alert('Veuillez entrer un mot de passe.')
+    return
+  }
+
+  // TODO: appeler le store d'authentification pour login ou register
+  console.log('Submitting form with:', { email: email.value, password: password.value, passwordConfirm: passwordConfirm.value })
+}
+
 </script>
 
 <template>
