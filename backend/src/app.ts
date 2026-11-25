@@ -9,6 +9,6 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Hello World!');
 });
 
-app.use('/api/movies', moviesRouter);
+app.use('/movies', moviesRouter);
 
 app.listen(3000);
